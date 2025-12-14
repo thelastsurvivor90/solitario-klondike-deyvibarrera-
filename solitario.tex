@@ -1,0 +1,698 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{pmboxdraw}
+\usepackage{fontawesome5}
+
+\geometry{margin=1in}
+
+% Configuración de listings para código Python
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{white},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    frame=single,
+    tabsize=4,
+    captionpos=b,
+    breaklines=true,
+    breakatwhitespace=false,
+    escapeinside={\%*}{*)},
+    xleftmargin=2em,
+    framexleftmargin=1.5em
+}
+
+% Encabezados
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Simulación Solitario Klondike}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{\textbf{Simulación Gráfica de Solitario Klondike} \\ 
+       \large Implementación con Python y Tkinter}
+\author{Programación Orientada a Objetos}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+El presente documento describe la implementación de una simulación gráfica del juego de cartas \textbf{Solitario Klondike}, conocido popularmente como el solitario clásico de Windows. El proyecto fue desarrollado utilizando Python como lenguaje de programación y Tkinter como framework para la interfaz gráfica.
+
+\subsection{Objetivos del Proyecto}
+
+\begin{itemize}
+    \item Implementar un juego de mesa completo con interfaz gráfica interactiva
+    \item Aplicar principios de Programación Orientada a Objetos
+    \item Demostrar el manejo de estructuras de datos complejas
+    \item Crear una experiencia de usuario fluida con eventos y animaciones
+\end{itemize}
+
+\subsection{Selección del Juego}
+
+Se eligió el Solitario Klondike por las siguientes razones:
+
+\begin{enumerate}
+    \item Es un juego ampliamente conocido y reconocible
+    \item Presenta desafíos interesantes en términos de lógica de programación
+    \item Permite demostrar manejo de múltiples estructuras de datos
+    \item Ofrece oportunidades para implementar drag \& drop y animaciones
+\end{enumerate}
+
+\section{Marco Teórico}
+
+\subsection{Programación Orientada a Objetos}
+
+La Programación Orientada a Objetos (POO) es un paradigma de programación que organiza el código en objetos que contienen datos (atributos) y comportamientos (métodos). Los pilares fundamentales de la POO son:
+
+\begin{description}
+    \item[Encapsulamiento:] Agrupa datos y métodos relacionados, ocultando los detalles de implementación.
+    \item[Herencia:] Permite crear nuevas clases basadas en clases existentes.
+    \item[Polimorfismo:] Capacidad de objetos de diferentes clases de responder al mismo mensaje.
+    \item[Abstracción:] Simplifica sistemas complejos modelando clases apropiadas al problema.
+\end{description}
+
+\subsection{Tkinter}
+
+Tkinter es la biblioteca estándar de Python para crear interfaces gráficas de usuario (GUI). Características principales:
+
+\begin{itemize}
+    \item Incluida por defecto en la instalación de Python
+    \item Multiplataforma (Windows, macOS, Linux)
+    \item Basada en el toolkit Tk
+    \item Proporciona widgets como botones, etiquetas, canvas, etc.
+\end{itemize}
+
+\subsection{Reglas del Solitario Klondike}
+
+El Solitario Klondike se juega con una baraja estándar de 52 cartas:
+
+\begin{itemize}
+    \item \textbf{Objetivo:} Construir cuatro fundaciones (pilas base) ordenadas del As al Rey, una por cada palo.
+    \item \textbf{Tableau:} Siete columnas donde se distribuyen las cartas al inicio.
+    \item \textbf{Mazo:} Cartas restantes que pueden ser robadas.
+    \item \textbf{Waste:} Pila de descarte para cartas robadas del mazo.
+\end{itemize}
+
+\textbf{Movimientos permitidos:}
+\begin{enumerate}
+    \item Cartas en el tableau deben alternarse en color (rojo-negro) y decrecer en valor
+    \item Solo los Reyes pueden colocarse en espacios vacíos del tableau
+    \item Las fundaciones deben comenzar con As y construirse en orden ascendente del mismo palo
+\end{enumerate}
+
+\section{Diseño e Implementación}
+
+\subsection{Arquitectura del Sistema}
+
+El sistema está compuesto por cuatro clases principales que interactúan entre sí:
+
+\begin{figure}[h]
+\centering
+\begin{verbatim}
+┌─────────────┐
+│    Card     │  Representa una carta individual
+└─────┬───────┘
+      │
+      │ usa
+      ▼
+┌─────────────┐
+│ CardWidget  │  Visualización de carta en canvas
+└─────┬───────┘
+      │
+      │ utilizada por
+      ▼
+┌──────────────────┐
+│ SolitaireGame    │  Lógica principal del juego
+└──────────────────┘
+\end{verbatim}
+\caption{Diagrama de clases simplificado}
+\end{figure}
+
+\subsection{Clase Card}
+
+La clase \texttt{Card} representa una carta individual del juego:
+
+\begin{lstlisting}[caption={Definición de la clase Card}]
+@dataclass
+class Card:
+    """Representa una carta del juego"""
+    suit: str      # Palo: picas, corazones, diamantes, treboles
+    rank: str      # Rango: A, 2-10, J, Q, K
+    face_up: bool = False  # Estado de la carta
+    
+    def get_value(self) -> int:
+        """Retorna valor numerico (A=1, J=11, Q=12, K=13)"""
+        return RANKS.index(self.rank) + 1
+    
+    def get_color(self) -> str:
+        """Retorna 'red' o 'black'"""
+        return COLORS[self.suit]
+\end{lstlisting}
+
+\textbf{Justificación del diseño:}
+\begin{itemize}
+    \item Uso de \texttt{@dataclass} para reducir código boilerplate
+    \item Métodos auxiliares para comparaciones lógicas
+    \item Separación clara entre datos y comportamiento
+\end{itemize}
+
+\subsection{Clase CardWidget}
+
+Responsable de la representación visual de cada carta:
+
+\begin{lstlisting}[caption={Método draw de CardWidget}]
+def draw(self):
+    """Dibuja la carta en el canvas"""
+    if self.card.face_up:
+        fill = 'white'
+        # Dibujar simbolos del palo
+        color = self.card.get_color()
+        self.canvas.create_text(...)
+    else:
+        fill = '#2E5090'
+        # Dibujar patron de carta boca abajo
+        self.canvas.create_text(...)
+\end{lstlisting}
+
+\textbf{Características importantes:}
+\begin{itemize}
+    \item Separación entre modelo (Card) y vista (CardWidget)
+    \item Método \texttt{move\_to()} con soporte para animaciones
+    \item Gestión eficiente de elementos gráficos en canvas
+\end{itemize}
+
+\subsection{Clase SolitaireGame}
+
+Clase principal que coordina toda la lógica del juego:
+
+\subsubsection{Estructuras de Datos}
+
+\begin{lstlisting}[caption={Estructuras de datos principales}]
+self.deck: List[Card] = []              # Mazo principal
+self.waste: List[Card] = []             # Pila de descarte
+self.foundations: List[List[Card]] = [[] for _ in range(4)]
+self.tableau: List[List[Card]] = [[] for _ in range(7)]
+\end{lstlisting}
+
+Cada estructura tiene un propósito específico:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|p{8cm}|}
+\hline
+\textbf{Estructura} & \textbf{Propósito} \\
+\hline
+\texttt{deck} & Almacena cartas no robadas \\
+\texttt{waste} & Cartas robadas del mazo \\
+\texttt{foundations} & 4 pilas objetivo (una por palo) \\
+\texttt{tableau} & 7 columnas de juego \\
+\hline
+\end{tabular}
+\caption{Estructuras de datos del juego}
+\end{table}
+
+\subsubsection{Gestión de Eventos}
+
+El sistema implementa un sofisticado manejo de eventos mouse:
+
+\begin{lstlisting}[caption={Vinculación de eventos}]
+self.canvas.bind('<Button-1>', self.on_click)
+self.canvas.bind('<B1-Motion>', self.on_drag)
+self.canvas.bind('<ButtonRelease-1>', self.on_release)
+\end{lstlisting}
+
+El flujo de eventos sigue este patrón:
+
+\begin{enumerate}
+    \item \textbf{Click}: Detecta qué elemento fue clickeado
+    \item \textbf{Drag}: Actualiza la posición durante el arrastre
+    \item \textbf{Release}: Valida y ejecuta el movimiento
+\end{enumerate}
+
+\subsection{Validación de Movimientos}
+
+\subsubsection{Movimientos al Tableau}
+
+\begin{lstlisting}[caption={Validación de movimiento al tableau}]
+def can_move_to_tableau(self, cards: List[Card], pile_idx: int) -> bool:
+    pile = self.tableau[pile_idx]
+    first_card = cards[0]
+    
+    if not pile:
+        return first_card.rank == 'K'  # Solo reyes en espacios vacios
+    
+    top_card = pile[-1]
+    return (first_card.get_color() != top_card.get_color() and
+            first_card.get_value() == top_card.get_value() - 1)
+\end{lstlisting}
+
+\textbf{Condiciones verificadas:}
+\begin{itemize}
+    \item Pilas vacías solo aceptan Reyes
+    \item Los colores deben alternar (rojo-negro)
+    \item El valor debe ser exactamente uno menor
+\end{itemize}
+
+\subsubsection{Movimientos a Fundaciones}
+
+\begin{lstlisting}[caption={Validación de movimiento a fundación}]
+def can_move_to_foundation(self, card: Card, foundation_idx: int) -> bool:
+    foundation = self.foundations[foundation_idx]
+    
+    if not foundation:
+        return card.rank == 'A'  # Fundaciones comienzan con As
+    
+    top_card = foundation[-1]
+    return (card.suit == top_card.suit and
+            card.get_value() == top_card.get_value() + 1)
+\end{lstlisting}
+
+\textbf{Reglas implementadas:}
+\begin{itemize}
+    \item Fundaciones vacías requieren As
+    \item Mismo palo obligatorio
+    \item Secuencia ascendente estricta
+\end{itemize}
+
+\section{Características Avanzadas}
+
+\subsection{Sistema Drag \& Drop}
+
+El sistema de arrastre utiliza una estructura de datos temporal:
+
+\begin{lstlisting}[caption={Estructura para drag \& drop}]
+self.drag_data = {
+    'cards': [],        # Cartas siendo arrastradas
+    'source': None,     # Origen del arrastre
+    'start_x': 0,       # Posicion inicial X
+    'start_y': 0        # Posicion inicial Y
+}
+\end{lstlisting}
+
+\subsection{Detección de Colisiones}
+
+Para determinar dónde soltar las cartas:
+
+\begin{lstlisting}[caption={Detección de zona de soltado}]
+def on_release(self, event):
+    x, y = event.x, event.y
+    
+    # Verificar fundaciones
+    foundation_idx = self.is_click_on_foundation(x, y)
+    if foundation_idx is not None:
+        if self.can_move_to_foundation(...):
+            self.move_to_foundation(foundation_idx)
+    
+    # Verificar tableau
+    for i in range(7):
+        if self.is_position_in_pile(x, y, i):
+            if self.can_move_to_tableau(...):
+                self.move_to_tableau(i)
+\end{lstlisting}
+
+\subsection{Animaciones}
+
+Aunque simplificadas en esta versión, el método \texttt{move\_to()} de \texttt{CardWidget} incluye soporte para animación:
+
+\begin{lstlisting}[caption={Animación de movimiento}]
+def move_to(self, x: int, y: int, animate: bool = False):
+    if animate:
+        steps = 10
+        dx = (x - self.x) / steps
+        dy = (y - self.y) / steps
+        
+        for _ in range(steps):
+            self.x += dx
+            self.y += dy
+            self.draw()
+            self.canvas.update()
+            self.canvas.after(20)
+\end{lstlisting}
+
+\section{Análisis de Complejidad}
+
+\subsection{Complejidad Temporal}
+
+Operaciones principales y su complejidad:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Operación} & \textbf{Complejidad} & \textbf{Justificación} \\
+\hline
+Inicializar juego & $O(n)$ & Crear y mezclar 52 cartas \\
+Dibujar carta & $O(1)$ & Operaciones gráficas constantes \\
+Validar movimiento & $O(1)$ & Comparaciones simples \\
+Redibujar todo & $O(n)$ & n = número de cartas visibles \\
+Detectar colisión & $O(1)$ & Cálculos aritméticos simples \\
+\hline
+\end{tabular}
+\caption{Análisis de complejidad temporal}
+\end{table}
+
+\subsection{Complejidad Espacial}
+
+\begin{itemize}
+    \item \textbf{Cartas}: $O(52)$ = $O(1)$ - tamaño fijo
+    \item \textbf{Widgets gráficos}: $O(n)$ donde n $\leq$ 52
+    \item \textbf{Pilas de juego}: $O(1)$ - estructuras fijas
+    \item \textbf{Total}: $O(1)$ - espacio constante
+\end{itemize}
+
+\section{Pruebas y Validación}
+
+\subsection{Casos de Prueba}
+
+\subsubsection{Prueba 1: Inicialización del Juego}
+
+\textbf{Objetivo}: Verificar que el juego se inicializa correctamente.
+
+\textbf{Procedimiento}:
+\begin{enumerate}
+    \item Ejecutar el programa
+    \item Observar la distribución inicial de cartas
+    \item Verificar que hay 7 columnas en el tableau
+    \item Confirmar que la última carta de cada columna está boca arriba
+\end{enumerate}
+
+\textbf{Resultado esperado}: 28 cartas distribuidas (1+2+3+4+5+6+7), y 24 en mazo.
+
+\subsubsection{Prueba 2: Movimientos Válidos}
+
+\textbf{Objetivo}: Validar la lógica de movimientos permitidos.
+
+\textbf{Casos}:
+\begin{itemize}
+    \item Mover carta negra sobre carta roja de valor superior
+    \item Intentar mover carta del mismo color (debe rechazarse)
+    \item Colocar Rey en espacio vacío
+    \item Mover As a fundación vacía
+\end{itemize}
+
+\subsubsection{Prueba 3: Condición de Victoria}
+
+\textbf{Objetivo}: Verificar detección de victoria.
+
+\textbf{Procedimiento}:
+\begin{enumerate}
+    \item Manipular el juego hasta completar las 4 fundaciones
+    \item Verificar aparición del mensaje de victoria
+    \item Confirmar que se muestra el número de movimientos
+\end{enumerate}
+
+\subsection{Resultados de Pruebas}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Caso de Prueba} & \textbf{Estado} & \textbf{Observaciones} \\
+\hline
+Inicialización & ✓ Pasó & Distribución correcta \\
+Movimientos válidos & ✓ Pasó & Validación funcional \\
+Movimientos inválidos & ✓ Pasó & Rechazos apropiados \\
+Drag \& Drop & ✓ Pasó & Fluido y preciso \\
+Condición de victoria & ✓ Pasó & Detección correcta \\
+Reinicio de juego & ✓ Pasó & Estado limpio \\
+\hline
+\end{tabular}
+\caption{Resultados de pruebas funcionales}
+\end{table}
+
+\section{Aplicación de Conceptos de la Unidad 4}
+
+\subsection{Estructuras de Datos}
+
+El proyecto hace uso extensivo de estructuras de datos de Python:
+
+\begin{description}
+    \item[Listas (List)]: Para representar pilas de cartas
+    \begin{lstlisting}
+self.tableau: List[List[Card]] = [[] for _ in range(7)]
+    \end{lstlisting}
+    
+    \item[Diccionarios (Dict)]: Para configuración y estado temporal
+    \begin{lstlisting}
+COLORS = {'picas': 'black', 'treboles': 'black', 
+          'corazones': 'red', 'diamantes': 'red'}
+self.drag_data = {'cards': [], 'source': None, ...}
+    \end{lstlisting}
+    
+    \item[Tuplas (Tuple)]: Para retornos múltiples inmutables
+    \begin{lstlisting}
+def is_click_on_tableau(...) -> Tuple[Optional[int], Optional[int]]:
+    \end{lstlisting}
+\end{description}
+
+\subsection{Algoritmos Implementados}
+
+\subsubsection{Algoritmo de Mezcla (Shuffle)}
+
+Utiliza el algoritmo Fisher-Yates implementado en \texttt{random.shuffle()}:
+
+\begin{lstlisting}
+self.deck = [Card(suit, rank) for suit in SUITS for rank in RANKS]
+random.shuffle(self.deck)  # O(n) - Fisher-Yates
+\end{lstlisting}
+
+Complejidad: $O(n)$ donde $n = 52$
+
+\subsubsection{Algoritmo de Búsqueda}
+
+Para detectar clics, se utiliza búsqueda lineal:
+
+\begin{lstlisting}
+def is_click_on_tableau(self, x: int, y: int):
+    for i, pile in enumerate(self.tableau):  # O(7)
+        for j, card in enumerate(pile):      # O(m)
+            if is_inside(x, y, card_bounds):
+                return i, j
+\end{lstlisting}
+
+Complejidad: $O(7 \times m)$ donde $m$ es el promedio de cartas por columna.
+
+\subsection{Programación Orientada a Objetos}
+
+\subsubsection{Encapsulamiento}
+
+Cada clase encapsula su propia lógica:
+
+\begin{itemize}
+    \item \texttt{Card}: Datos y operaciones de una carta
+    \item \texttt{CardWidget}: Renderizado visual
+    \item \texttt{SolitaireGame}: Lógica del juego
+\end{itemize}
+
+\subsubsection{Abstracción}
+
+Los métodos públicos ocultan detalles de implementación:
+
+\begin{lstlisting}
+# Interfaz simple
+game.draw_from_deck()  # Usuario no necesita saber los detalles
+
+# Implementacion interna compleja
+def draw_from_deck(self):
+    if self.deck:
+        card = self.deck.pop()
+        card.face_up = True
+        self.waste.append(card)
+        self.increment_moves()
+    # ... mas logica
+\end{lstlisting}
+
+\subsubsection{Composición}
+
+\texttt{SolitaireGame} compone múltiples \texttt{CardWidget}:
+
+\begin{lstlisting}
+self.card_widgets: List[CardWidget] = []
+
+for card in visible_cards:
+    widget = CardWidget(self.canvas, card, x, y)
+    self.card_widgets.append(widget)
+\end{lstlisting}
+
+\section{Mejoras Futuras}
+
+\subsection{Funcionalidades Adicionales}
+
+\begin{enumerate}
+    \item \textbf{Sistema de Pistas}: Resaltar movimientos posibles
+    \item \textbf{Deshacer/Rehacer}: Stack de estados anteriores
+    \item \textbf{Estadísticas}: Guardar récords y porcentaje de victorias
+    \item \textbf{Diferentes Variantes}: Spider, FreeCell, etc.
+    \item \textbf{Modo Tutorial}: Guía para nuevos jugadores
+\end{enumerate}
+
+\subsection{Optimizaciones Técnicas}
+
+\begin{enumerate}
+    \item \textbf{Renderizado Selectivo}: Solo redibujar elementos modificados
+    \item \textbf{Doble Clic Automático}: Mover automáticamente a fundaciones
+    \item \textbf{Animaciones Suavizadas}: Usar interpolación cuadrática
+    \item \textbf{Resolución Adaptativa}: Ajustar tamaño según ventana
+\end{enumerate}
+
+\subsection{Arquitectura}
+
+\begin{enumerate}
+    \item \textbf{Patrón MVC}: Separar modelo, vista y controlador
+    \item \textbf{Sistema de Eventos}: Implementar observer pattern
+    \item \textbf{Persistencia}: Guardar/cargar estado del juego
+    \item \textbf{Testing}: Suite de pruebas unitarias con pytest
+\end{enumerate}
+
+\section{Conclusiones}
+
+\subsection{Logros del Proyecto}
+
+El proyecto cumplió exitosamente con todos los objetivos planteados:
+
+\begin{itemize}
+    \item ✓ Implementacion completa de un juego de mesa funcional
+    \item ✓ Interfaz grafica atractiva y responsiva
+    \item ✓ Aplicacion correcta de principios de POO
+    \item ✓ Manejo eficiente de estructuras de datos
+    \item ✓ Sistema de eventos robusto
+\end{itemize}
+
+\subsection{Aprendizajes Clave}
+
+Durante el desarrollo se obtuvieron aprendizajes valiosos:
+
+\begin{enumerate}
+    \item \textbf{Diseno de Software}: La importancia de planificar la arquitectura antes de codificar
+    \item \textbf{Gestion de Estado}: Mantener sincronizacion entre modelo y vista
+    \item \textbf{Debugging Visual}: Tecnicas para depurar interfaces graficas
+    \item \textbf{Manejo de Eventos}: Complejidad de sistemas interactivos
+\end{enumerate}
+
+\subsection{Aplicación Práctica}
+
+Este proyecto demuestra competencias en:
+
+\begin{itemize}
+    \item Programacion Orientada a Objetos
+    \item Estructuras de datos complejas
+    \item Desarrollo de interfaces graficas
+    \item Algoritmos de validacion
+    \item Gestion de eventos de usuario
+\end{itemize}
+
+\subsection{Reflexión Final}
+
+La implementacion del Solitario Klondike representa un desafio completo que integra multiples areas de la programacion. Mas alla de ser un simple juego, este proyecto demuestra la capacidad de:
+
+\begin{itemize}
+    \item Analizar un problema complejo
+    \item Disenar una solucion escalable
+    \item Implementar codigo mantenible
+    \item Crear experiencias de usuario agradables
+\end{itemize}
+
+El codigo resultante es extensible, permitiendo agregar facilmente nuevas caracteristicas o variantes del juego.
+
+\section{Referencias}
+
+\begin{enumerate}
+    \item Python Software Foundation. (2024). \textit{Python Documentation}. https://docs.python.org/3/
+    
+    \item Tkinter Documentation. (2024). \textit{Tk Commands}. https://docs.python.org/3/library/tkinter.html
+    
+    \item Gamma, E., Helm, R., Johnson, R., \& Vlissides, J. (1994). \textit{Design Patterns: Elements of Reusable Object-Oriented Software}. Addison-Wesley.
+    
+    \item Lutz, M. (2013). \textit{Learning Python, 5th Edition}. O'Reilly Media.
+    
+    \item Wikipedia Contributors. (2024). \textit{Klondike (solitaire)}. Wikipedia.
+    
+    \item Python.org. (2024). \textit{Python Type Hints}. https://docs.python.org/3/library/typing.html
+    
+    \item Real Python. (2024). \textit{Python GUI Programming With Tkinter}. https://realpython.com/python-gui-tkinter/
+\end{enumerate}
+
+\appendix
+
+\section{Código Completo}
+
+El codigo completo del proyecto esta disponible en el archivo \texttt{solitaire\_klondike.py}.
+
+\subsection{Estructura de Archivos}
+
+\begin{verbatim}
+proyecto_solitario/
+│
+├── solitaire_klondike.py    # Código principal
+├── informe.tex               # Este documento
+├── informe.pdf               # Documento compilado
+└── README.md                 # Instrucciones de ejecución
+\end{verbatim}
+
+\subsection{Requisitos del Sistema}
+
+\begin{itemize}
+    \item Python 3.8 o superior
+    \item Tkinter (incluido en instalacion estandar de Python)
+    \item Sistema operativo: Windows, macOS, o Linux
+    \item Resolucion minima: 800x650 pixeles
+\end{itemize}
+
+\subsection{Instrucciones de Ejecucion}
+
+\begin{lstlisting}[language=bash, caption={Comandos para ejecutar}]
+# Clonar o descargar el proyecto
+cd proyecto_solitario
+
+# Ejecutar el juego
+python solitaire_klondike.py
+
+# Compilar el informe LaTeX
+pdflatex informe.tex
+bibtex informe
+pdflatex informe.tex
+pdflatex informe.tex
+\end{lstlisting}
+
+\section{Glosario de Terminos}
+
+\begin{description}
+    \item[Canvas] Area de dibujo en Tkinter donde se renderizan elementos graficos
+    \item[Dataclass] Decorador de Python para crear clases con menos codigo boilerplate
+    \item[Drag and Drop] Tecnica de interaccion donde se arrastra y suelta un elemento
+    \item[Event Handler] Funcion que responde a eventos del usuario
+    \item[Foundation] Pila objetivo donde se construyen secuencias As-Rey
+    \item[Framework] Conjunto de herramientas y bibliotecas para facilitar desarrollo
+    \item[GUI] Graphical User Interface (Interfaz Grafica de Usuario)
+    \item[Tableau] Area principal de juego con 7 columnas de cartas
+    \item[Widget] Componente visual reutilizable de una interfaz grafica
+    \item[Waste] Pila de descarte para cartas robadas del mazo
+\end{description}
+
+\end{document}
