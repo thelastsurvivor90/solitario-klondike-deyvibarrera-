@@ -168,6 +168,7 @@ Este proyecto es para fines educativos.
 
 Proyecto desarrollado como parte del curso de Estadística Descriptiva y Probabilidad 2025-II
 De la mano de la orientacion de la asombrosa y diligente docente Ruth Mery Gonzalez Sepulveda 
+Tener en cuenta que aun anda en desarollo por motivos de fallos en python
 
 
 ---
