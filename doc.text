@@ -1,0 +1,138 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Codificación ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+
+% --- Matemáticas ---
+\usepackage{amsmath,amssymb}
+
+% --- Gráficos ---
+\usepackage{tikz}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{arrows.meta,calc}
+
+% --- Diseño ---
+\usepackage{geometry}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{textcomp} % para \textdegree
+
+% --- Enlaces ---
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% --- Metadatos ---
+\title{\textbf{VectorVisualizer}\\
+Sistema Avanzado de Visualización\\
+de Vectores y Espacios Vectoriales}
+\author{Aplicación Python + PyLaTeX + TikZ}
+\date{\today}
+
+% --- Colores personalizados ---
+\definecolor{vec1}{RGB}{220,50,50}
+\definecolor{vec2}{RGB}{50,120,220}
+\definecolor{vec3}{RGB}{50,180,100}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+%------------------------------------------------
+\section{Introducción}
+VectorVisualizer combina Python y \LaTeX{} para crear visualizaciones profesionales de álgebra lineal.
+
+%------------------------------------------------
+\section{Fundamentos Matemáticos}
+
+Un vector en $\mathbb{R}^2$ se expresa como:
+\[
+\vec{v} =
+\begin{pmatrix}
+v_x \\ v_y
+\end{pmatrix}
+\]
+
+\begin{center}
+\begin{tikzpicture}[scale=1.5]
+    % Ejes
+    \draw[->,thick] (-0.5,0) -- (4,0) node[right] {x};
+    \draw[->,thick] (0,-0.5) -- (0,4) node[above] {y};
+
+    % Vector
+    \draw[->,ultra thick,vec1] (0,0) -- (3,2) node[midway,above left] {$\vec{v}$};
+
+    % Proyecciones
+    \draw[dashed,gray] (3,0) -- (3,2);
+    \draw[dashed,gray] (0,2) -- (3,2);
+
+    % Punto final
+    \fill[vec1] (3,2) circle (2pt);
+\end{tikzpicture}
+\end{center}
+
+%------------------------------------------------
+\section{Transformaciones Lineales}
+
+Una transformación lineal se representa como:
+\[
+T(\vec{v}) = A\vec{v}
+\]
+
+\subsection{Rotación de 45 grados}
+
+\begin{center}
+\begin{tikzpicture}[scale=1.5]
+    % Ejes
+    \draw[->,thick] (-0.5,0) -- (3,0) node[right] {x};
+    \draw[->,thick] (0,-0.5) -- (0,3) node[above] {y};
+
+    % Vector original
+    \draw[->,ultra thick,vec1] (0,0) -- (2,0) node[midway,below] {$\vec{v}$};
+
+    % Vector rotado
+    \draw[->,ultra thick,vec2] (0,0) -- (1.41,1.41) node[midway,above left] {$T(\vec{v})$};
+
+    % Arco indicando rotación
+    \draw[->,thick,vec3] (0.8,0) arc (0:45:0.8) node[midway,right] {45\textdegree};
+
+    % Puntos finales
+    \fill[vec1] (2,0) circle (2pt);
+    \fill[vec2] (1.41,1.41) circle (2pt);
+\end{tikzpicture}
+\end{center}
+
+%------------------------------------------------
+\section{Arquitectura del Sistema}
+
+\begin{tcolorbox}[title=Estructura del Proyecto,colback=blue!5,colframe=blue!50!black]
+\begin{verbatim}
+VectorVisualizer/
+|-- vector_visualizer.py
+|-- examples.py
+|-- requirements.txt
+`-- output/
+\end{verbatim}
+\end{tcolorbox}
+
+%------------------------------------------------
+\appendix
+\section{Código Python Básico}
+
+\begin{lstlisting}[language=Python,basicstyle=\small\ttfamily]
+class Vector2D:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        return Vector2D(self.x + other.x,
+                        self.y + other.y)
+\end{lstlisting}
+
+\end{document}
